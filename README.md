@@ -52,8 +52,8 @@ classical-crypto/
 ### Локально
 
 ```bash
-git clone https://github.com/<username>/classical-crypto.git
-cd classical-crypto
+git clone https://github.com/<yurbas-art>/crypto-tui.git
+cd crypto-tui
 pip install -r requirements.txt
 python main.py
 ```
@@ -61,8 +61,8 @@ python main.py
 ### Docker
 
 ```bash
-docker build -t classical-crypto .
-docker run -it classical-crypto
+docker build -t crypto-tui .
+docker run -it crypto-tui
 ```
 
 ## Тестирование
@@ -93,4 +93,4 @@ D(x) = (x − k) mod n
 
 ---
 
-Учебно-ознакомительная практика, ВГУЭС, кафедра ИТиС, 2026.
+Учебно-ознакомительная практика, ВВГУ, кафедра ИТС, 2026.
