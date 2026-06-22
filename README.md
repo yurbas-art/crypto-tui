@@ -52,7 +52,7 @@ classical-crypto/
 ### Локально
 
 ```bash
-git clone https://github.com/<yurbas-art>/crypto-tui.git
+git clone https://github.com/yurbas-art/crypto-tui.git
 cd crypto-tui
 pip install -r requirements.txt
 python main.py
