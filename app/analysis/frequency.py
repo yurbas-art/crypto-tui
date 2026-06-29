@@ -5,12 +5,15 @@
 
 Относительная частота символа:
     p = nᵢ / N
-где nᵢ — количество вхождений символа, N — длина текста.
+где nᵢ — количество вхождений символа, N — общее число букв в тексте.
 
-Вероятный ключ определяется сопоставлением наиболее частого
-символа шифртекста с наиболее частым символом русского языка.
+Вероятный ключ определяется сопоставлением наиболее частого символа
+шифртекста с наиболее частым символом русского языка («О»).
 """
 
+from __future__ import annotations
+
+from app.ciphers import caesar
 
 ALPHABET = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
 ALPHABET_SIZE = len(ALPHABET)
@@ -25,6 +28,8 @@ RU_FREQ: dict[str, float] = {
     "Ф": 0.0026, "Ъ": 0.0004,
 }
 
+MOST_FREQUENT_RU = max(RU_FREQ, key=RU_FREQ.__getitem__)
+
 
 def count_frequencies(text: str) -> dict[str, int]:
     """Подсчитать абсолютные частоты букв в тексте.
@@ -35,9 +40,13 @@ def count_frequencies(text: str) -> dict[str, int]:
         text: Анализируемый текст.
 
     Returns:
-        Словарь {буква: количество_вхождений}.
+        Словарь {буква: количество_вхождений}, отсортированный по убыванию.
     """
-    raise NotImplementedError
+    counts: dict[str, int] = {ch: 0 for ch in ALPHABET}
+    for char in text.upper():
+        if char in counts:
+            counts[char] += 1
+    return dict(sorted(counts.items(), key=lambda x: x[1], reverse=True))
 
 
 def relative_frequencies(text: str) -> dict[str, float]:
@@ -47,24 +56,37 @@ def relative_frequencies(text: str) -> dict[str, float]:
         text: Анализируемый текст.
 
     Returns:
-        Словарь {буква: относительная_частота} (сумма ≈ 1.0).
+        Словарь {буква: относительная_частота}, отсортированный по убыванию.
+        Для пустого текста все значения равны 0.0.
     """
-    raise NotImplementedError
+    counts = count_frequencies(text)
+    total = sum(counts.values())
+    if total == 0:
+        return {ch: 0.0 for ch in ALPHABET}
+    return {ch: cnt / total for ch, cnt in counts.items()}
 
 
 def guess_caesar_key(text: str) -> int:
     """Определить вероятный ключ шифра Цезаря частотным методом.
 
-    Сопоставляет наиболее частый символ шифртекста
-    с наиболее частым символом русского языка ('О').
+    Сопоставляет наиболее частый символ шифртекста с наиболее
+    частым символом русского языка («О»).
 
     Args:
         text: Зашифрованный текст.
 
     Returns:
-        Предполагаемый ключ (целое число от 0 до ALPHABET_SIZE-1).
+        Предполагаемый ключ (0 если текст пуст или нет букв алфавита).
     """
-    raise NotImplementedError
+    counts = count_frequencies(text)
+    total = sum(counts.values())
+    if total == 0:
+        return 0
+
+    most_common = max(counts, key=counts.__getitem__)
+    enc_idx = ALPHABET.index(most_common)
+    exp_idx = ALPHABET.index(MOST_FREQUENT_RU)
+    return (enc_idx - exp_idx) % ALPHABET_SIZE
 
 
 def auto_decrypt_caesar(text: str) -> tuple[str, int]:
@@ -76,4 +98,5 @@ def auto_decrypt_caesar(text: str) -> tuple[str, int]:
     Returns:
         Кортеж (расшифрованный_текст, использованный_ключ).
     """
-    raise NotImplementedError
+    key = guess_caesar_key(text)
+    return caesar.decrypt(text, key), key

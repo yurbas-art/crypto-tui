@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  crypto-tui:
+    build: .
+    image: crypto-tui:latest
+    container_name: crypto-tui
+    stdin_open: true
+    tty: true
