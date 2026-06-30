@@ -14,8 +14,8 @@
 │  │  TUI-интерфейс на базе Textual                   │  │
 │  │  - Главное меню                                  │  │
 │  │  - Формы ввода ключей                            │  │
-│  │  - Отображение текста                            │  │
-│  │  - Диалоги сохранения                            │  │
+│  │  - Открытие / сохранение файлов                  │  │
+│  │  - Отображение результата                        │  │
 │  └──────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────┘
                             ↕
@@ -46,7 +46,13 @@
 │  │              frequency.py                        │  │
 │  │  count_frequencies()  relative_frequencies()     │  │
 │  │  guess_caesar_key()   auto_decrypt_caesar()      │  │
-│  │  (зависит от caesar.decrypt — явная зависимость) │  │
+│  └──────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │              kasiski.py                          │  │
+│  │  index_of_coincidence()  estimate_key_length()   │  │
+│  │  guess_key_length()  guess_key()                 │  │
+│  │  auto_decrypt_vigenere()                         │  │
+│  │  (зависит от frequency.guess_caesar_key)         │  │
 │  └──────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────┘
 ```
@@ -68,20 +74,24 @@
 **Технологии:**
 - Библиотека **Textual** — фреймворк для TUI-приложений на Python
 - Событийная модель работы: реактивные атрибуты (`reactive`), обмен сообщениями (`Message`)
+- Минимальный CSS — внешний вид приближен к обычному терминалу
 
 **Компоненты интерфейса:**
 - `CryptoApp` — корневое приложение Textual
-- `MainScreen` — главный экран с меню
+- `MainScreen` — главный экран с меню (6 пунктов)
 - `CaesarScreen` — экран шифра Цезаря
 - `VigenereScreen` — экран шифра Виженера
 - `PolybiusScreen` — экран шифра Полибия
-- `FrequencyScreen` — экран частотного анализа
+- `FrequencyScreen` — экран частотного анализа (взлом Цезаря)
+- `KasiskiScreen` — экран взлома Виженера по индексу совпадений
 
 **Принципы:**
 - Полное отсутствие бизнес-логики
 - Все вычисления делегируются слою бизнес-логики
 - Архитектура Textual: событийная модель (event-driven),
-  не MVC — состояние хранится в `reactive`-атрибутах `App`
+  не MVC — состояние хранится в виджетах экрана
+- Общая функция `handle_file()` переиспользуется всеми экранами
+  для открытия/сохранения файлов — устраняет дублирование кода
 
 ---
 
@@ -102,14 +112,24 @@ class CipherService:
     def decrypt_vigenere(self, text: str, key: str) -> str
     def encrypt_polybius(self, text: str) -> str
     def decrypt_polybius(self, text: str) -> str
-    def frequency_analysis(self, text: str) -> dict
-    def auto_decrypt_caesar(self, text: str) -> tuple[str, int]
+    def frequency_analysis(self, text: str) -> FrequencyResult
+    def break_vigenere(self, text: str, max_key_length: int = 15) -> KasiskiResult
 ```
 
-Пример делегирования:
+**Структуры данных:**
 ```python
-def encrypt_caesar(self, text: str, key: int) -> str:
-    return caesar.encrypt(text, key)
+@dataclass
+class FrequencyResult:
+    frequencies: dict[str, float]
+    probable_key: int
+    decrypted_text: str
+
+@dataclass
+class KasiskiResult:
+    key_length_estimates: dict[int, float]
+    probable_key_length: int
+    probable_key: str
+    decrypted_text: str
 ```
 
 ---
@@ -117,7 +137,7 @@ def encrypt_caesar(self, text: str, key: int) -> str:
 #### Модуль: `services/file_service.py`
 
 **Ответственность:**
-- Чтение текстовых файлов (UTF-8)
+- Чтение текстовых файлов (UTF-8, расширение `.txt`)
 - Запись результатов в файлы
 - Валидация путей
 - Обработка ошибок ввода-вывода
@@ -128,11 +148,12 @@ class FileService:
     def read_file(self, file_path: str) -> str
     def write_file(self, file_path: str, content: str) -> bool
     def validate_file_path(self, file_path: str) -> bool
+    def get_file_info(self, file_path: str) -> dict
 ```
 
-> Примечание: паттерн Singleton для `FileService` не применяется —
-> в однопоточном TUI-приложении достаточно создать один экземпляр
-> в точке входа (`main.py`) и передать его через DI.
+**Важно:** пути к файлам резолвятся относительно текущей рабочей
+директории процесса (откуда запущен `python main.py`), а не
+относительно расположения файлов проекта.
 
 ---
 
@@ -184,6 +205,8 @@ D(xᵢ) = (xᵢ − kᵢ) mod n
 
 #### `analysis/frequency.py`
 
+Криптоанализ шифра Цезаря.
+
 Алгоритм определения ключа:
 1. Подсчёт абсолютных частот: `nᵢ`
 2. Вычисление относительных частот: `p = nᵢ / N`
@@ -192,8 +215,40 @@ D(xᵢ) = (xᵢ − kᵢ) mod n
 5. Вычисление сдвига: `key = (enc_idx − expected_idx) mod n`
 
 **Межмодульная зависимость:** `frequency.auto_decrypt_caesar`
-явно импортирует `caesar.decrypt`. Это единственная зависимость
-между модулями алгоритмического слоя.
+явно импортирует `caesar.decrypt`.
+
+---
+
+#### `analysis/kasiski.py`
+
+Криптоанализ шифра Виженера методом индекса совпадений (IC).
+
+```
+IC = Σ nᵢ(nᵢ − 1) / [N(N − 1)]
+```
+
+Для текста на русском языке IC ≈ 0.0553, для случайного текста IC ≈ 0.0313.
+
+Алгоритм:
+1. Перебор длины ключа `m = 1..15`
+2. Разбиение текста на `m` подпотоков (символы с шагом `m`)
+3. Вычисление среднего IC подпотоков для каждой длины
+4. Длина ключа с IC, ближайшим к эталону русского языка, считается верной
+   (с поправкой на типичную ошибку метода — угадывание длины,
+   кратной истинной)
+5. Каждая буква ключа определяется частотным анализом (как для Цезаря)
+   соответствующего подпотока
+
+**Межмодульная зависимость:** `kasiski.guess_key` использует
+`frequency.guess_caesar_key` для каждого подпотока, `kasiski.auto_decrypt_vigenere`
+импортирует `vigenere.decrypt`.
+
+**Практическое ограничение:** для надёжного определения каждой буквы
+ключа требуется ~150–200 символов на подпоток. При ключе длины 4 это
+означает текст не короче ~800–1000 букв. На более коротких текстах
+длина ключа обычно определяется верно, но отдельные буквы ключа
+могут быть угаданы с ошибкой — это фундаментальное ограничение
+частотного анализа на малой выборке, а не ошибка реализации.
 
 ---
 
@@ -201,29 +256,9 @@ D(xᵢ) = (xᵢ − kᵢ) mod n
 
 | Паттерн | Где | Зачем |
 |---|---|---|
-| Facade | `CipherService` | Единый интерфейс к шифрам для UI |
-| Event-driven | Textual App | Реактивные атрибуты, обмен Message |
-| Dependency Injection | `main.py` | Передача сервисов в App без Singleton |
-
----
-
-## Структуры данных
-
-```python
-@dataclass
-class AppState:
-    current_text: str = ""
-    result_text: str = ""
-    current_file_path: str = ""
-    last_key: str = ""
-    last_cipher: str = ""
-
-@dataclass
-class FrequencyResult:
-    frequencies: dict[str, float]
-    probable_key: int
-    decrypted_text: str
-```
+| Facade | `CipherService` | Единый интерфейс к шифрам и анализу для UI |
+| Event-driven | Textual App | Виджеты, обмен Message |
+| Dependency Injection | `main.py` / `CryptoApp.__init__` | Сервисы создаются один раз и передаются через `self.app` |
 
 ---
 
@@ -235,8 +270,11 @@ textual_app.py
     │       ├── caesar.encrypt / decrypt
     │       ├── vigenere.encrypt / decrypt
     │       ├── polybius.encrypt / decrypt
-    │       └── frequency.auto_decrypt_caesar
-    │               └── caesar.decrypt  ← явная зависимость
+    │       ├── frequency.auto_decrypt_caesar
+    │       │       └── caesar.decrypt
+    │       └── kasiski.auto_decrypt_vigenere
+    │               ├── frequency.guess_caesar_key  (на подпотоках)
+    │               └── vigenere.decrypt
     └── FileService
 ```
 
@@ -246,7 +284,7 @@ textual_app.py
 
 1. Создать `ciphers/playfair.py` с функциями `encrypt` / `decrypt`
 2. Добавить методы в `CipherService`
-3. Добавить экран в `textual_app.py`
+3. Добавить экран в `textual_app.py`, зарегистрировать в `MainScreen.routes`
 
 **Время разработки:** ~30 минут
 
@@ -255,12 +293,15 @@ textual_app.py
 ## Ограничения текущей реализации
 
 - Поддержка только русского алфавита (32 буквы, без `Ё`)
-- Частотный анализ работает только для шифра Цезаря
+- Взлом Виженера по IC требует достаточно длинного текста (см. выше)
+- Чтение/запись файлов работает только с расширением `.txt`
 - Нет асинхронной обработки больших файлов
 
 ## Возможные улучшения
 
 - Абстрактный базовый класс `CipherStrategy` (паттерн Strategy)
 - Поддержка буквы `Ё` и латинского алфавита
+- Метод Касиски (поиск повторяющихся n-грамм) как дополнение к IC
+  для более точной оценки длины ключа на коротких текстах
 - Асинхронная обработка больших файлов (`asyncio`)
 - Экспорт результатов (JSON, CSV)
