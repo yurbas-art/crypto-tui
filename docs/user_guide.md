@@ -22,8 +22,6 @@ python main.py
 
 ### Через Docker
 
-или
-
 ```bash
 git clone https://github.com/yurbas-art/crypto-tui.git
 cd crypto-tui
