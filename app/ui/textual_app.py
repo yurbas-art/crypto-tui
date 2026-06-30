@@ -109,6 +109,7 @@ class CaesarScreen(Screen):
             Input(placeholder="путь к файлу", id="file-path"),
             Button("Открыть", id="open"),
             Button("Сохранить", id="save"),
+            id="file-row",
         )
         yield Label("Текст:")
         yield TextArea(id="text-in")
@@ -173,6 +174,7 @@ class VigenereScreen(Screen):
             Input(placeholder="путь к файлу", id="file-path"),
             Button("Открыть", id="open"),
             Button("Сохранить", id="save"),
+            id="file-row",
         )
         yield Label("Текст:")
         yield TextArea(id="text-in")
@@ -243,6 +245,7 @@ class PolybiusScreen(Screen):
             Input(placeholder="путь к файлу", id="file-path"),
             Button("Открыть", id="open"),
             Button("Сохранить", id="save"),
+            id="file-row",
         )
         yield Label("Текст / Пары цифр:")
         yield TextArea(id="text-in")
@@ -297,6 +300,7 @@ class FrequencyScreen(Screen):
             Input(placeholder="путь к файлу", id="file-path"),
             Button("Открыть", id="open"),
             Button("Сохранить", id="save"),
+            id="file-row",
         )
         yield Label("Зашифрованный текст (шифр Цезаря):")
         yield TextArea(id="text-in")
@@ -352,6 +356,7 @@ class KasiskiScreen(Screen):
             Input(placeholder="путь к файлу", id="file-path"),
             Button("Открыть", id="open"),
             Button("Сохранить", id="save"),
+            id="file-row",
         )
         yield Label("Зашифрованный текст (шифр Виженера):")
         yield TextArea(id="text-in")
@@ -409,6 +414,19 @@ class CryptoApp(App):
 
     TITLE = "crypto-tui"
     BINDINGS = [("q", "quit", "Выход")]
+
+    CSS = """
+    #file-row {
+        height: auto;
+    }
+    #file-row Input {
+        width: 1fr;
+    }
+    #file-row Button {
+        width: auto;
+        min-width: 12;
+    }
+    """
 
     def __init__(self) -> None:
         super().__init__()
