@@ -12,6 +12,16 @@ from app.ciphers import caesar
 from app.ciphers import vigenere
 from app.ciphers import polybius
 from app.analysis import frequency
+from app.analysis import kasiski
+
+
+@dataclass
+class KasiskiResult:
+    """Результат взлома шифра Виженера методом индекса совпадений."""
+    key_length_estimates: dict[int, float]
+    probable_key_length: int
+    probable_key: str
+    decrypted_text: str
 
 
 @dataclass
@@ -125,6 +135,32 @@ class CipherService:
         decrypted, key = frequency.auto_decrypt_caesar(text)
         return FrequencyResult(
             frequencies=freqs,
+            probable_key=key,
+            decrypted_text=decrypted,
+        )
+
+    def break_vigenere(self, text: str, max_key_length: int = 15) -> KasiskiResult:
+        """Взломать шифр Виженера методом индекса совпадений.
+
+        Оценивает длину ключа, подбирает сам ключ частотным анализом
+        каждого подпотока и выполняет расшифровку.
+
+        Args:
+            text:           Зашифрованный текст.
+            max_key_length: Максимальная проверяемая длина ключа.
+
+        Returns:
+            KasiskiResult с оценками длины ключа, вероятным ключом
+            и расшифрованным текстом.
+        """
+        if not text.strip():
+            raise ValueError("Текст не может быть пустым")
+        estimates = kasiski.estimate_key_length(text, max_key_length)
+        key_length = kasiski.guess_key_length(text, max_key_length)
+        decrypted, key = kasiski.auto_decrypt_vigenere(text, max_key_length)
+        return KasiskiResult(
+            key_length_estimates=estimates,
+            probable_key_length=key_length,
             probable_key=key,
             decrypted_text=decrypted,
         )
