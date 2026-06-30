@@ -22,13 +22,11 @@ python main.py
 
 ### Через Docker
 
-```bash
-docker compose up --build
-```
-
 или
 
 ```bash
+git clone https://github.com/yurbas-art/crypto-tui.git
+cd crypto-tui
 docker build -t crypto-tui .
 docker run -it crypto-tui
 ```
