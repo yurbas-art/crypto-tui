@@ -68,7 +68,7 @@ docker run -it crypto-tui
 ## Тестирование
 
 ```bash
-pytest tests/
+pytest tests/ -v
 ```
 
 ## Алгоритмы
