@@ -23,11 +23,6 @@ COORDS_TO_CHAR: dict[tuple[int, int], str] = {}
 
 
 def build_table() -> None:
-    """Построить таблицу Полибия и индексы поиска.
-
-    Заполняет глобальные TABLE, CHAR_TO_COORDS, COORDS_TO_CHAR.
-    Вызывается один раз при импорте модуля.
-    """
     global TABLE, CHAR_TO_COORDS, COORDS_TO_CHAR
     TABLE = []
     CHAR_TO_COORDS = {}
@@ -48,17 +43,6 @@ def build_table() -> None:
 
 
 def encrypt(text: str) -> str:
-    """Зашифровать текст шифром Полибия.
-
-    Каждый символ заменяется парой цифр «строка столбец».
-    Пары разделяются пробелом. Символы вне таблицы пропускаются.
-
-    Args:
-        text: Исходный текст.
-
-    Returns:
-        Строка вида «11 32 21 ...».
-    """
     parts = []
     for char in text.upper():
         if char in CHAR_TO_COORDS:
@@ -68,17 +52,6 @@ def encrypt(text: str) -> str:
 
 
 def decrypt(text: str) -> str:
-    """Расшифровать текст шифром Полибия.
-
-    Args:
-        text: Строка пар цифр, разделённых пробелами («11 32 21 ...»).
-
-    Returns:
-        Восстановленный текст в верхнем регистре.
-
-    Raises:
-        ValueError: Если пара координат не найдена в таблице.
-    """
     result = []
     for pair in text.strip().split():
         if len(pair) != 2 or not pair.isdigit():
