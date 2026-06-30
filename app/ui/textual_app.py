@@ -1,7 +1,3 @@
-"""
-TUI-приложение на базе Textual.
-"""
-
 from __future__ import annotations
 
 from textual.app import App, ComposeResult
@@ -12,10 +8,6 @@ from textual.containers import Vertical, Horizontal
 from app.services.cipher_service import CipherService
 from app.services.file_service import FileService
 
-
-# ---------------------------------------------------------------------------
-# Главное меню
-# ---------------------------------------------------------------------------
 
 class MainScreen(Screen):
 
@@ -60,11 +52,6 @@ class MainScreen(Screen):
         elif event.button.id in routes:
             self.app.push_screen(routes[event.button.id]())
 
-
-# ---------------------------------------------------------------------------
-# Вспомогательная функция: открыть / сохранить файл
-# ---------------------------------------------------------------------------
-
 def handle_file(event_id: str, path: str, text_in, text_out, status, file_svc) -> bool:
     """Обработать кнопки open/save. Возвращает True если действие выполнено."""
     if event_id == "open":
@@ -93,11 +80,6 @@ def handle_file(event_id: str, path: str, text_in, text_out, status, file_svc) -
         return True
 
     return False
-
-
-# ---------------------------------------------------------------------------
-# Шифр Цезаря
-# ---------------------------------------------------------------------------
 
 class CaesarScreen(Screen):
 
@@ -159,11 +141,6 @@ class CaesarScreen(Screen):
         except Exception as e:
             status.update(f"[!] {e}")
 
-
-# ---------------------------------------------------------------------------
-# Шифр Виженера
-# ---------------------------------------------------------------------------
-
 class VigenereScreen(Screen):
 
     def compose(self) -> ComposeResult:
@@ -217,11 +194,6 @@ class VigenereScreen(Screen):
                 status.update(f"[OK] Расшифровано, ключ = {key.upper()}")
         except Exception as e:
             status.update(f"[!] {e}")
-
-
-# ---------------------------------------------------------------------------
-# Шифр Полибия
-# ---------------------------------------------------------------------------
 
 class PolybiusScreen(Screen):
 
@@ -285,11 +257,6 @@ class PolybiusScreen(Screen):
         except Exception as e:
             status.update(f"[!] {e}")
 
-
-# ---------------------------------------------------------------------------
-# Частотный анализ
-# ---------------------------------------------------------------------------
-
 class FrequencyScreen(Screen):
 
     def compose(self) -> ComposeResult:
@@ -340,11 +307,6 @@ class FrequencyScreen(Screen):
             status.update(f"[OK] Вероятный ключ: {r.probable_key}")
         except Exception as e:
             status.update(f"[!] {e}")
-
-
-# ---------------------------------------------------------------------------
-# Взлом Виженера (индекс совпадений)
-# ---------------------------------------------------------------------------
 
 class KasiskiScreen(Screen):
 
@@ -404,11 +366,6 @@ class KasiskiScreen(Screen):
             status.update(f"[OK] Ключ: {r.probable_key} (длина {r.probable_key_length})")
         except Exception as e:
             status.update(f"[!] {e}")
-
-
-# ---------------------------------------------------------------------------
-# Приложение
-# ---------------------------------------------------------------------------
 
 class CryptoApp(App):
 

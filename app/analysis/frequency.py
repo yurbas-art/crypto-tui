@@ -1,16 +1,3 @@
-"""
-Частотный анализ текста.
-
-Используется для криптоанализа шифра Цезаря.
-
-Относительная частота символа:
-    p = nᵢ / N
-где nᵢ — количество вхождений символа, N — общее число букв в тексте.
-
-Вероятный ключ определяется сопоставлением наиболее частого символа
-шифртекста с наиболее частым символом русского языка («О»).
-"""
-
 from __future__ import annotations
 
 from app.ciphers import caesar
@@ -32,16 +19,6 @@ MOST_FREQUENT_RU = max(RU_FREQ, key=RU_FREQ.__getitem__)
 
 
 def count_frequencies(text: str) -> dict[str, int]:
-    """Подсчитать абсолютные частоты букв в тексте.
-
-    Символы не из алфавита игнорируются.
-
-    Args:
-        text: Анализируемый текст.
-
-    Returns:
-        Словарь {буква: количество_вхождений}, отсортированный по убыванию.
-    """
     counts: dict[str, int] = {ch: 0 for ch in ALPHABET}
     for char in text.upper():
         if char in counts:
@@ -50,15 +27,6 @@ def count_frequencies(text: str) -> dict[str, int]:
 
 
 def relative_frequencies(text: str) -> dict[str, float]:
-    """Вычислить относительные частоты букв в тексте.
-
-    Args:
-        text: Анализируемый текст.
-
-    Returns:
-        Словарь {буква: относительная_частота}, отсортированный по убыванию.
-        Для пустого текста все значения равны 0.0.
-    """
     counts = count_frequencies(text)
     total = sum(counts.values())
     if total == 0:
@@ -67,17 +35,6 @@ def relative_frequencies(text: str) -> dict[str, float]:
 
 
 def guess_caesar_key(text: str) -> int:
-    """Определить вероятный ключ шифра Цезаря частотным методом.
-
-    Сопоставляет наиболее частый символ шифртекста с наиболее
-    частым символом русского языка («О»).
-
-    Args:
-        text: Зашифрованный текст.
-
-    Returns:
-        Предполагаемый ключ (0 если текст пуст или нет букв алфавита).
-    """
     counts = count_frequencies(text)
     total = sum(counts.values())
     if total == 0:
@@ -90,13 +47,5 @@ def guess_caesar_key(text: str) -> int:
 
 
 def auto_decrypt_caesar(text: str) -> tuple[str, int]:
-    """Автоматически расшифровать текст, зашифрованный шифром Цезаря.
-
-    Args:
-        text: Зашифрованный текст.
-
-    Returns:
-        Кортеж (расшифрованный_текст, использованный_ключ).
-    """
     key = guess_caesar_key(text)
     return caesar.decrypt(text, key), key
