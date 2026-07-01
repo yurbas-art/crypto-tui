@@ -59,7 +59,6 @@ def guess_key_length(text: str, max_length: int = MAX_KEY_LENGTH, tolerance: flo
 
 
 def guess_key(text: str, key_length: int) -> str:
-
     streams = _split_into_streams(text, key_length)
     key_chars = []
     for stream in streams:
@@ -69,7 +68,6 @@ def guess_key(text: str, key_length: int) -> str:
 
 
 def auto_decrypt_vigenere(text: str, max_length: int = MAX_KEY_LENGTH) -> tuple[str, str]:
-
     from app.ciphers import vigenere
 
     key_length = guess_key_length(text, max_length)
